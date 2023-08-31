@@ -27,9 +27,10 @@ class ExchangeRatesClient:
     def get_rates_date_range(self, base_currency: str, start_date: str, end_date: str):
         url=f'{self.api_base_url}timeseries'
         params = {
-            "access_key": self.api_base_url,
+            "access_key": self.api_access_key,
             "start_date": start_date,
-            "end_date": end_date
+            "end_date": end_date,
+            "base": base_currency
         }
 
         response = requests.get(url=url, params=params)
