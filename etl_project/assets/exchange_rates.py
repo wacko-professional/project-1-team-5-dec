@@ -18,13 +18,13 @@ def extract_exchange_rates(
           currency        rate base_currency        date
         0      AED    3.983947           EUR  2023-08-29
         1      AFN   90.049247           EUR  2023-08-29
-    
+
     Args:
         exchange_rate_client: ExchangeRatesClient object
         base_currency: currency against which the rates are returned
         date_requested: the date for which the rates are to be returned
     """
-    
+
     dictRates = exchange_rate_client.get_rates(
         base_currency=base_currency,
         date=date_requested.strftime("%Y-%m-%d")
@@ -35,7 +35,8 @@ def extract_exchange_rates(
         return df
 
 def transform_exchange_rates(df: pd.DataFrame, base_currency: str, date: datetime):
-        
+
     df["base_currency"] = base_currency
+    # TODO: Need to handle case where date does not need .date() method
     df["date"] = date.date()
     return df
