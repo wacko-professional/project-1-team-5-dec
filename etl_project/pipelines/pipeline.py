@@ -4,6 +4,8 @@ from etl_project.assets.logging import LoggingClient
 from etl_project.assets.exchange_rates import extract_exchange_rates, transform_exchange_rates
 from etl_project.assets.postgresql import SqlTransform
 from jinja2 import Environment, FileSystemLoader
+from etl_project.assets.postgresql import SqlTransform
+from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 import yaml
 from pathlib import Path
