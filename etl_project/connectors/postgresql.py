@@ -20,13 +20,13 @@ class PostgresqlClient:
             database = self.db_database
         )
         self.engine = create_engine(url=connection_url)
-    
+
     def create_table_if_not_exists(self, meta: MetaData, table: Table):
         meta.create_all(bind=self.engine)
-    
+
     def execute_scalar(self, query: str):
         return self.engine.execute(query).scalar()
-    
+
     def upsert(self, table: Table, data: list[dict]):
         pk_columns = [pk_column.name for pk_column in table.primary_key.columns.values()]
         insert_statement = postgresql.Insert(table).values(data)
@@ -35,3 +35,6 @@ class PostgresqlClient:
             set_ = {c.key:c for c in insert_statement.excluded if c.key not in pk_columns}
         )
         return self.engine.execute(upsert_statement)
+
+    def create_all_tables(self, meta: MetaData) -> None:
+        meta.create_all(self.engine)

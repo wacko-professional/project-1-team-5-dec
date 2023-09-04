@@ -1,6 +1,7 @@
 from etl_project.connectors.exchange_rates import ExchangeRatesClient
 from etl_project.connectors.postgresql import PostgresqlClient
-from etl_project.assets.logging import LoggingClient
+from etl_project.assets.pipeline_logging import PipelineLogging
+from etl_project.assets.metadata_logging import MetaDataLogging, MetaDataLoggingStatus
 from etl_project.assets.exchange_rates import extract_exchange_rates, transform_exchange_rates
 from etl_project.assets.postgresql import SqlTransform
 from jinja2 import Environment, FileSystemLoader
@@ -31,9 +32,23 @@ if __name__ == "__main__":
     log_path = yaml_config.get("config").get("log_folder_path")
 
     # create logging client
-    pipeline_logger = LoggingClient(log_path=log_path)
+    DB_USERNAME = os.environ.get("DB_USERNAME")
+    DB_PASSWORD = os.environ.get("DB_PASSWORD")
+    LOGGING_SERVER_NAME = os.environ.get("SERVER_NAME")
+    LOGGING_DATABASE_NAME = os.environ.get("DATABASE_NAME")
+    PORT = os.environ.get("PORT")
+
+    postgresql_logging_client = PostgresqlClient(
+        db_server_name=LOGGING_SERVER_NAME,
+        db_database=LOGGING_DATABASE_NAME,
+        db_username=DB_USERNAME,
+        db_password=DB_PASSWORD,
+        db_port=PORT
+    )
+    metadata_logging = MetaDataLogging(pipeline_name="exchange_rates", postgresql_client=postgresql_logging_client)
+    pipeline_logger = PipelineLogging(pipeline_name="exchange_rates", log_path=log_path)
     pipeline_logger.log_to_file(message="Starting pipeline run")
-    
+
     # set up environment variables
     pipeline_logger.log_to_file(message="Getting pipeline environment variables")
     ACCESS_KEY = os.environ.get("ACCESS_KEY")
@@ -42,7 +57,7 @@ if __name__ == "__main__":
     SERVER_NAME = os.environ.get("SERVER_NAME")
     DATABASE_NAME = os.environ.get("DATABASE_NAME")
     PORT = os.environ.get("PORT")
-    
+
     pipeline_logger.log_to_file(message="Initialising PostgresClient instance")
     raw_psql_client = PostgresqlClient(
         db_server_name=SERVER_NAME,
@@ -71,9 +86,9 @@ if __name__ == "__main__":
 
     pipeline_logger.log_to_file(message="Retrieving last extract date")
     last_update = raw_psql_client.execute_scalar(query="SELECT MAX(date) AS last_updated FROM rates")
-    
+
     day_count = 0
-    
+
     # if no last_update value retrieved from data, set the last_date to yesterday's date and days of data to extract to 1
     # else if last_update exists and is before the current date, set the days of date to extract to the number of days since last update
     if last_update is None:
@@ -100,10 +115,10 @@ if __name__ == "__main__":
         if df_forex_transformed is not None:
             pipeline_logger.log_to_file(message=f"Loading data for {date_requested}")
             records_affected = raw_psql_client.upsert(table=rates_table, data=df_forex_transformed.to_dict(orient="records")).rowcount
-        
+
             print(records_affected)
-    
-    
+
+
 
      # Transform and Load
     staging_postgresql_client = PostgresqlClient(
@@ -137,3 +152,4 @@ if __name__ == "__main__":
         #    node.create_table_as()
 
     pipeline_logger.log_to_file(message="Pipeline run successful")
+    metadata_logging.log(status=MetaDataLoggingStatus.RUN_SUCCESS, logs=pipeline_logger.get_logs())
