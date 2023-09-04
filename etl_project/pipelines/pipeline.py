@@ -2,13 +2,14 @@ from etl_project.connectors.exchange_rates import ExchangeRatesClient
 from etl_project.connectors.postgresql import PostgresqlClient
 from etl_project.assets.logging import LoggingClient
 from etl_project.assets.exchange_rates import extract_exchange_rates, transform_exchange_rates
+from etl_project.assets.postgresql import SqlTransform
+from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 import yaml
 from pathlib import Path
 import os
 from datetime import datetime, timedelta, date
 from sqlalchemy import MetaData, Table, Column, Identity, String, Integer, DATE, DECIMAL
-import pandas as pd
 
 if __name__ == "__main__":
 
@@ -22,7 +23,7 @@ if __name__ == "__main__":
             yaml_config = yaml.safe_load(yaml_file)
     else:
         raise Exception(f"Missing {yaml_file_path} file!")
-    
+
     base_url = yaml_config.get("base_url")
     base_currency = yaml_config.get("base_currency")
     log_path = yaml_config.get("config").get("log_folder_path")
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     PORT = os.environ.get("PORT")
     
     pipeline_logger.log_to_file(message="Initialising PostgresClient instance")
-    postgresql_client = PostgresqlClient(
+    raw_psql_client = PostgresqlClient(
         db_server_name=SERVER_NAME,
         db_username=DB_USERNAME,
         db_password=DB_PASSWORD,
@@ -61,13 +62,13 @@ if __name__ == "__main__":
     )
 
     pipeline_logger.log_to_file(message=f"Creating table {rates_table_name} if it does not exist")
-    postgresql_client.create_table_if_not_exists(meta=meta, table=rates_table)
+    raw_psql_client.create_table_if_not_exists(meta=meta, table=rates_table)
 
     pipeline_logger.log_to_file(message="Creating ExchangeRatesClient instance")
     exchange_rate_client = ExchangeRatesClient(api_base_url=base_url, api_access_key=ACCESS_KEY)
 
     pipeline_logger.log_to_file(message="Retrieving last extract date")
-    last_update = postgresql_client.execute_scalar(query="SELECT MAX(date) AS last_updated FROM rates")
+    last_update = raw_psql_client.execute_scalar(query="SELECT MAX(date) AS last_updated FROM rates")
     
     day_count = 0
     
@@ -96,8 +97,41 @@ if __name__ == "__main__":
 
         if df_forex_transformed is not None:
             pipeline_logger.log_to_file(message=f"Loading data for {date_requested}")
-            records_affected = postgresql_client.upsert(table=rates_table, data=df_forex_transformed.to_dict(orient="records")).rowcount
+            records_affected = raw_psql_client.upsert(table=rates_table, data=df_forex_transformed.to_dict(orient="records")).rowcount
         
             print(records_affected)
     
+    
+
+     # Transform and Load
+    staging_postgresql_client = PostgresqlClient(
+        db_server_name=os.getenv("TARGET_SERVER_NAME"),
+        db_database=os.getenv("TARGET_DATABASE_NAME"),
+        db_username=os.getenv("TARGET_DB_USERNAME"),
+        db_password=os.getenv("TARGET_DB_PASSWORD"),
+        db_port=os.getenv("TARGET_PORT")
+    )
+
+    transform_environment = Environment(loader=FileSystemLoader("etl_project/sql/transform"))
+
+    for sql_path in transform_environment.list_templates():
+        sql_template = transform_environment.get_template(sql_path)
+        table_name = sql_template.make_module().config.get("table_name")
+
+        # Node
+        sql_transform = SqlTransform(
+           engine=staging_postgresql_client.engine,
+           environment=transform_environment,
+           table_name=table_name
+           )
+
+        sql_transform.create_table_as()
+
+        ## create DAG
+        #dag = TopologicalSorter()
+        #dag.add()
+        ## run transform
+        #for node in tuple(dag.static_order()):
+        #    node.create_table_as()
+
     pipeline_logger.log_to_file(message="Pipeline run successful")
