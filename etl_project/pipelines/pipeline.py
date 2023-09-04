@@ -46,9 +46,10 @@ if __name__ == "__main__":
         db_port=PORT
     )
 
+    metadata_logging = MetaDataLogging(pipeline_name="exchange_rates", postgresql_client=postgresql_logging_client)
+    pipeline_logger = PipelineLogging(pipeline_name="exchange_rates", log_path=log_path)
+
     try:
-        metadata_logging = MetaDataLogging(pipeline_name="exchange_rates", postgresql_client=postgresql_logging_client)
-        pipeline_logger = PipelineLogging(pipeline_name="exchange_rates", log_path=log_path)
         pipeline_logger.log_to_file(message="Starting pipeline run")
 
         # set up environment variables
