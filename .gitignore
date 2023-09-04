@@ -1,4 +1,9 @@
 *.pyc
+<<<<<<< HEAD
+*.log
+__pycache__/
+=======
 __pycache__/
 *.log
 *.env
+>>>>>>> master
