@@ -1,17 +1,17 @@
 from etl_project.connectors.exchange_rates import ExchangeRatesClient
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 
 def extract_exchange_rates(
         exchange_rate_client: ExchangeRatesClient,
         base_currency: str,
-        date_requested: datetime
+        date_requested: date
     ) -> pd.DataFrame:
     """
     Perform extraction by calling the exchange rates connector class
 
     Usage example:
-        extract_exchange_rates(exchange_rate_client=exchange_rate_client, base_currency='EUR', date_requested=datetime(2023, 1, 1))
+        extract_exchange_rates(exchange_rate_client=exchange_rate_client, base_currency='EUR', date_requested=datetime(2023, 1, 1).date())
 
     Returns:
         A DataFrame with currencies and their rates against the base currency
@@ -34,8 +34,12 @@ def extract_exchange_rates(
         df = pd.DataFrame(dictRates.items(), columns=["currency", "rate"])
         return df
 
-def transform_exchange_rates(df: pd.DataFrame, base_currency: str, date: datetime):
+def transform_exchange_rates(df: pd.DataFrame, base_currency: str, date: date):
         
     df["base_currency"] = base_currency
-    df["date"] = date.date()
+    df["date"] = date
+    
+    # btc_index = df[df.currency == 'BTC'].index
+    # df.drop(btc_index, inplace=True)
+
     return df
