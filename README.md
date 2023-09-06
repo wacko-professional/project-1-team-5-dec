@@ -1,14 +1,27 @@
 # ReadMe
 
 ## Project Context and Goals
+For a travel agency organising tours worlwide, data surrounding exchange rates plays an important role.
+It impacts decisions surrounding:
 
-The objective of our project is to create an ETL pipeline to provide key metrics/aggregations of exchange rates from an API and persist them in a database. This can be used by **data analysts** and **data scientists** in businesses whose operations involve foreign exchanges (e.g. A travel agency organising tours worldwide). It would allow them to create analytical deicisions/modelling based on metrics, such as but not limited to:
+1. Whether travel package prices for different countries should be adjusted,
+2. How to hedge against future payments that will be made to foreign countries,
+3. Whether to pre-pay for services immediately or later based on currency forecasts.
 
-> - short- and long-term trends (based on moving averages) of select exchange rates/currencies
-> - exchange rate pairings having the highest relative strength at a given day
-> - most volatile exchange rate pairing over the past week
-> - performance of a currency from the start of the month to the current date (MTD)
-> - the rate change from a specific date to the rate on the same day last year (YOY)
+To this extent, it is important for the data analysts and data scientists working for the travel agency to have the following information:
+1. What are the short- and long-term trends (based on moving averages) of select exchange rates/currencies?
+2  Which exchange rate pairings have the highest relative strength today?
+3. What is the performance of a currency from the start of the month to the current date (using MTD)?
+4. How much did the rate change from a specific date to the rate on the same day last year (using YoY)?
+5. Which currency/exchange rate pairings have been the most volatile over the past 6 months?
+
+The goal of our project is therefore to create an ETL pipeline for providing the following key metrics/aggregations of exchange rates in order to help analysts/data scientists answer the aforementioned questions:
+1. Month to Date: How much did a given currency change from the beginning of the month to the current date relative to another currency?
+2. Moving Averages: What are the short-term (e.g. 7-day), medium-term (e.g. 30-day) and long-term (e.g. 90-day) trends of select exchange rates/currencies?
+3. Relative Strengths: Which currency has the highest relative strength relative to another currency, today?
+4. Year over Year: How much did a given exchange rate pairing change from a given date to the same time last year?
+5. Volatility: Which exchange rate pairings have been the most volatile over the past 7 days?
+
 
 ## Datasets Selected
 | Source name | Source type | Source documentation |
@@ -26,7 +39,7 @@ In the API, the group utilized both *latest rates* and *historical rates* endpoi
 ## Techniques Applied
 - The script utilized an ETL process and an initial run was orchestrated manually to obtain 370 days worth of data, enough to calculate the YOY metric in an RDS PostgreSQL instance.
 - The automated runs utilize an incremental extract wherein the max or latest date is queried from the database and is used as the process start date in the API.
-- Data extracted by the automated runs are loaded into the same RDS instance as inserts. 
+- Data extracted by the automated runs are loaded into the same RDS instance as inserts.
 - Calculation of various metrics are performed once the extract process completes; the transformation scripts are stored in jinja templates.
 - All the aforementioned processes are containerized using docker and the images are uploaded into AWS ECR. AWS ECS is provisioned to run the whole pipeline at 24-hour intervals.
 
