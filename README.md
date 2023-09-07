@@ -1,4 +1,4 @@
-# ReadMe
+# Team 5 - Pipeline for serving relevant Exchange Rates Metrics   
 
 ## Project Context and Goals
 For a travel agency organising tours worlwide, data surrounding exchange rates plays an important role.
