@@ -1,0 +1,4 @@
+base_url: http://api.exchangeratesapi.io/v1/
+base_currency: EUR
+config:
+  log_folder_path: "./etl_project/logs"

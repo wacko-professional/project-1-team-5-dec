@@ -37,7 +37,7 @@ In the API, the group utilized both *latest rates* and *historical rates* endpoi
 
 
 ## Techniques Applied
-- The script utilized an ETL process and an initial run was orchestrated manually to obtain 370 days worth of data, enough to calculate the YOY metric in an RDS PostgreSQL instance.
+- An initial run was orchestrated manually to obtain 370 days worth of data, enough to calculate the YOY metric in an RDS PostgreSQL instance.
 - The automated runs utilize an incremental extract wherein the max or latest date is queried from the database and is used as the process start date in the API.
 - Data extracted by the automated runs are loaded into the same RDS instance as inserts.
 - Calculation of various metrics are performed once the extract process completes; the transformation scripts are stored in jinja templates.
